@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BluzitsFrames - Editor de Guiones por Frames</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e6e6e6;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .logo-container {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #4cc9f0, #4361ee);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .app-name {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(45deg, #4cc9f0, #4361ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .workspace {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            cursor: grab;
+        }
+
+        .workspace.panning {
+            cursor: grabbing;
+        }
+
+        .frames-container {
+            position: relative;
+            width: 5000px;
+            height: 5000px;
+            transform-origin: 0 0;
+            transition: transform 0.1s;
+            padding: 100px;
+        }
+
+        .frame {
+            position: absolute;
+            width: 300px;
+            background: rgba(30, 30, 46, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(76, 201, 240, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            z-index: 10;
+        }
+
+        .frame.selected {
+            border: 2px solid #4cc9f0;
+            box-shadow: 0 0 0 2px rgba(76, 201, 240, 0.3), 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .frame:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .frame-header {
+            padding: 12px 15px;
+            background: rgba(22, 33, 62, 0.8);
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(76, 201, 240, 0.2);
+            cursor: move;
+        }
+
+        .frame-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #4cc9f0;
+        }
+
+        .frame-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .frame-btn {
+            background: rgba(76, 201, 240, 0.2);
+            border: none;
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4cc9f0;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .frame-btn:hover {
+            background: rgba(76, 201, 240, 0.4);
+        }
+
+        .frame-content {
+            padding: 15px;
+        }
+
+        .frame-text {
+            width: 100%;
+            min-height: 100px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 10px;
+            color: #e6e6e6;
+            resize: vertical;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .frame-media {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .media-preview {
+            width: 100%;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .media-preview img, .media-preview video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .media-preview audio {
+            width: 100%;
+        }
+
+        .media-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .media-btn {
+            flex: 1;
+            padding: 6px 10px;
+            background: rgba(67, 97, 238, 0.3);
+            border: none;
+            border-radius: 4px;
+            color: #a5b4fc;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .media-btn:hover {
+            background: rgba(67, 97, 238, 0.5);
+        }
+
+        .frame-duration {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .duration-label {
+            font-size: 13px;
+            color: #a5b4fc;
+        }
+
+        .duration-input {
+            width: 80px;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: #e6e6e6;
+            font-size: 13px;
+        }
+
+        .connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .connection {
+            stroke: #4cc9f0;
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowhead);
+        }
+
+        .frame-counter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(30, 30, 46, 0.8);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #a5b4fc;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .zoom-info {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(30, 30, 46, 0.8);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #a5b4fc;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .help-overlay {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(30, 30, 46, 0.9);
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #a5b4fc;
+            z-index: 100;
+            max-width: 300px;
+            border: 1px solid rgba(76, 201, 240, 0.3);
+            display: none;
+        }
+
+        .help-overlay h3 {
+            margin-bottom: 10px;
+            color: #4cc9f0;
+        }
+
+        .help-overlay ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .help-overlay li {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .help-overlay kbd {
+            background: rgba(76, 201, 240, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 8px;
+            font-family: monospace;
+            border: 1px solid rgba(76, 201, 240, 0.3);
+        }
+
+        .help-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(30, 30, 46, 0.8);
+            border: 1px solid rgba(76, 201, 240, 0.3);
+            color: #4cc9f0;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 101;
+        }
+
+        .selected-frame-info {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            background: rgba(30, 30, 46, 0.8);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #a5b4fc;
+            z-index: 100;
+            pointer-events: none;
+            display: none;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            padding: 8px 15px;
+            background: rgba(30, 30, 46, 0.8);
+            border: 1px solid rgba(76, 201, 240, 0.3);
+            border-radius: 20px;
+            color: #a5b4fc;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: rgba(76, 201, 240, 0.2);
+            color: #4cc9f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <div class="logo">B</div>
+        <div class="app-name">BluzitsFrames</div>
+    </div>
+
+    <div class="controls">
+        <button class="control-btn" id="new-project">Nuevo Proyecto</button>
+        <button class="control-btn" id="save-project">Guardar</button>
+        <button class="control-btn" id="load-project">Cargar</button>
+        <button class="control-btn" id="export-project">Exportar</button>
+        <button class="control-btn" id="import-project">Importar</button>
+    </div>
+
+    <div class="frame-counter">Frames: <span id="frame-count">0</span></div>
+    <div class="zoom-info">Zoom: <span id="zoom-level">100%</span></div>
+    <div class="selected-frame-info" id="selected-frame-info">Frame seleccionado: <span id="selected-frame-num">-</span></div>
+
+    <div class="help-toggle" id="help-toggle">?</div>
+    <div class="help-overlay" id="help-overlay">
+        <h3>Atajos de teclado</h3>
+        <ul>
+            <li><kbd>+</kbd> Agregar nuevo frame</li>
+            <li><kbd>-</kbd> Eliminar frame seleccionado</li>
+            <li><kbd>Ctrl + 1-9</kbd> Seleccionar frame</li>
+            <li><kbd>Rueda del mouse</kbd> Zoom in/out</li>
+            <li><kbd>Rueda presionada</kbd> Mover el lienzo</li>
+            <li><kbd>Ctrl + C</kbd> Copiar frame seleccionado</li>
+            <li><kbd>Ctrl + V</kbd> Pegar frame</li>
+            <li><kbd>Ctrl + S</kbd> Guardar proyecto</li>
+            <li><kbd>Ctrl + L</kbd> Cargar proyecto</li>
+            <li><kbd>Ctrl + N</kbd> Nuevo proyecto</li>
+            <li><kbd>Ctrl + E</kbd> Exportar proyecto</li>
+            <li><kbd>Ctrl + I</kbd> Importar proyecto</li>
+        </ul>
+    </div>
+
+    <div class="workspace" id="workspace">
+        <div class="frames-container" id="frames-container">
+            <svg class="connections" id="connections"></svg>
+            <!-- Los frames se agregarán aquí dinámicamente -->
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let frames = [];
+        let frameCounter = 0;
+        let zoomLevel = 1;
+        let isPanning = false;
+        let startPanX, startPanY;
+        let initialScrollLeft, initialScrollTop;
+        let selectedFrame = null;
+        let copiedFrame = null;
+        let autoSaveInterval;
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            // Agregar el marcador de flecha para las conexiones
+            const connections = document.getElementById('connections');
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+            marker.setAttribute('id', 'arrowhead');
+            marker.setAttribute('markerWidth', '10');
+            marker.setAttribute('markerHeight', '7');
+            marker.setAttribute('refX', '9');
+            marker.setAttribute('refY', '3.5');
+            marker.setAttribute('orient', 'auto');
+            
+            const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+            polygon.setAttribute('fill', '#4cc9f0');
+            
+            marker.appendChild(polygon);
+            defs.appendChild(marker);
+            connections.appendChild(defs);
+
+            // Agregar eventos
+            document.getElementById('workspace').addEventListener('mousedown', startPan);
+            document.getElementById('workspace').addEventListener('wheel', handleZoom);
+            document.addEventListener('keydown', handleKeydown);
+            document.getElementById('help-toggle').addEventListener('click', toggleHelp);
+            document.getElementById('new-project').addEventListener('click', newProject);
+            document.getElementById('save-project').addEventListener('click', saveProject);
+            document.getElementById('load-project').addEventListener('click', loadProject);
+            document.getElementById('export-project').addEventListener('click', exportProject);
+            document.getElementById('import-project').addEventListener('click', importProject);
+
+            // Cargar proyecto guardado si existe
+            loadProject();
+
+            // Configurar autoguardado cada 5 segundos
+            autoSaveInterval = setInterval(saveProject, 5000);
+        });
+
+        // Función para crear un nuevo proyecto
+        function newProject() {
+            if (confirm("¿Estás seguro de que quieres crear un nuevo proyecto? Se perderán los cambios no guardados.")) {
+                // Limpiar todos los frames
+                frames.forEach(frame => {
+                    const frameElement = document.getElementById(frame.id);
+                    if (frameElement) {
+                        frameElement.remove();
+                    }
+                });
+                
+                // Reiniciar contadores
+                frames = [];
+                frameCounter = 0;
+                selectedFrame = null;
+                
+                // Actualizar la interfaz
+                document.getElementById('frame-count').textContent = '0';
+                document.getElementById('selected-frame-info').style.display = 'none';
+                
+                // Actualizar conexiones
+                updateConnections();
+                
+                // Guardar el estado vacío
+                saveProject();
+            }
+        }
+
+        // Función para guardar el proyecto en localStorage
+        function saveProject() {
+            const projectData = {
+                frames: frames.map(frame => {
+                    const frameElement = document.getElementById(frame.id);
+                    return {
+                        id: frame.id,
+                        number: frame.number,
+                        x: parseInt(frameElement.style.left),
+                        y: parseInt(frameElement.style.top),
+                        text: frameElement.querySelector('.frame-text').value,
+                        duration: frameElement.querySelector('.duration-input').value,
+                        media: frameElement.querySelector('.media-preview').innerHTML
+                    };
+                }),
+                frameCounter: frameCounter,
+                zoomLevel: zoomLevel,
+                containerPosition: {
+                    left: document.getElementById('frames-container').style.left || '0',
+                    top: document.getElementById('frames-container').style.top || '0'
+                }
+            };
+            
+            localStorage.setItem('bluzitsFramesProject', JSON.stringify(projectData));
+            console.log('Proyecto guardado en localStorage');
+        }
+
+        // Función para cargar el proyecto desde localStorage
+        function loadProject() {
+            const savedProject = localStorage.getItem('bluzitsFramesProject');
+            
+            if (savedProject) {
+                try {
+                    const projectData = JSON.parse(savedProject);
+                    
+                    // Limpiar frames existentes
+                    frames.forEach(frame => {
+                        const frameElement = document.getElementById(frame.id);
+                        if (frameElement) {
+                            frameElement.remove();
+                        }
+                    });
+                    
+                    frames = [];
+                    frameCounter = projectData.frameCounter || 0;
+                    
+                    // Restaurar posición del contenedor
+                    const container = document.getElementById('frames-container');
+                    container.style.left = projectData.containerPosition.left;
+                    container.style.top = projectData.containerPosition.top;
+                    
+                    // Restaurar zoom
+                    zoomLevel = projectData.zoomLevel || 1;
+                    container.style.transform = `scale(${zoomLevel})`;
+                    document.getElementById('zoom-level').textContent = `${Math.round(zoomLevel * 100)}%`;
+                    
+                    // Recrear frames
+                    if (projectData.frames && projectData.frames.length > 0) {
+                        projectData.frames.forEach(frameData => {
+                            createFrameFromData(frameData);
+                        });
+                    } else {
+                        // Si no hay frames guardados, crear uno por defecto
+                        addFrame();
+                    }
+                    
+                    // Actualizar contador
+                    document.getElementById('frame-count').textContent = frames.length;
+                    
+                    // Actualizar conexiones
+                    updateConnections();
+                    
+                    console.log('Proyecto cargado desde localStorage');
+                } catch (error) {
+                    console.error('Error al cargar el proyecto:', error);
+                    // Si hay un error, crear un frame por defecto
+                    addFrame();
+                }
+            } else {
+                // Si no hay proyecto guardado, crear frames de ejemplo
+                addFrame();
+                addFrame();
+                addFrame();
+            }
+        }
+
+        // Función para exportar el proyecto a un archivo
+        function exportProject() {
+            const projectData = {
+                frames: frames.map(frame => {
+                    const frameElement = document.getElementById(frame.id);
+                    return {
+                        id: frame.id,
+                        number: frame.number,
+                        x: parseInt(frameElement.style.left),
+                        y: parseInt(frameElement.style.top),
+                        text: frameElement.querySelector('.frame-text').value,
+                        duration: frameElement.querySelector('.duration-input').value,
+                        media: frameElement.querySelector('.media-preview').innerHTML
+                    };
+                }),
+                frameCounter: frameCounter,
+                zoomLevel: zoomLevel,
+                containerPosition: {
+                    left: document.getElementById('frames-container').style.left || '0',
+                    top: document.getElementById('frames-container').style.top || '0'
+                },
+                exportDate: new Date().toISOString(),
+                appVersion: '1.0'
+            };
+            
+            // Crear un blob con los datos
+            const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+            
+            // Crear un enlace de descarga
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bluzitsframes-proyecto-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Limpiar
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+            
+            console.log('Proyecto exportado');
+        }
+
+        // Función para importar un proyecto desde un archivo
+        function importProject() {
+            if (frames.length > 0 && !confirm("¿Estás seguro de que quieres importar un proyecto? Se perderán los cambios no guardados.")) {
+                return;
+            }
+            
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.style.display = 'none';
+            
+            input.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        try {
+                            const projectData = JSON.parse(e.target.result);
+                            
+                            // Validar que sea un archivo de proyecto válido
+                            if (!projectData.frames || !Array.isArray(projectData.frames)) {
+                                throw new Error('Archivo de proyecto no válido');
+                            }
+                            
+                            // Limpiar frames existentes
+                            frames.forEach(frame => {
+                                const frameElement = document.getElementById(frame.id);
+                                if (frameElement) {
+                                    frameElement.remove();
+                                }
+                            });
+                            
+                            frames = [];
+                            frameCounter = projectData.frameCounter || 0;
+                            
+                            // Restaurar posición del contenedor
+                            const container = document.getElementById('frames-container');
+                            container.style.left = projectData.containerPosition.left || '0';
+                            container.style.top = projectData.containerPosition.top || '0';
+                            
+                            // Restaurar zoom
+                            zoomLevel = projectData.zoomLevel || 1;
+                            container.style.transform = `scale(${zoomLevel})`;
+                            document.getElementById('zoom-level').textContent = `${Math.round(zoomLevel * 100)}%`;
+                            
+                            // Recrear frames
+                            projectData.frames.forEach(frameData => {
+                                createFrameFromData(frameData);
+                            });
+                            
+                            // Actualizar contador
+                            document.getElementById('frame-count').textContent = frames.length;
+                            
+                            // Actualizar conexiones
+                            updateConnections();
+                            
+                            // Guardar en localStorage
+                            saveProject();
+                            
+                            console.log('Proyecto importado correctamente');
+                            alert('Proyecto importado correctamente');
+                        } catch (error) {
+                            console.error('Error al importar el proyecto:', error);
+                            alert('Error al importar el proyecto: ' + error.message);
+                        }
+                    };
+                    
+                    reader.readAsText(file);
+                }
+                
+                // Eliminar el input después de usarlo
+                input.remove();
+            });
+            
+            document.body.appendChild(input);
+            input.click();
+        }
+
+        // Función para crear un frame a partir de datos guardados
+        function createFrameFromData(frameData) {
+            frameCounter = Math.max(frameCounter, frameData.number);
+            
+            const frameId = frameData.id;
+            const frame = document.createElement('div');
+            frame.className = 'frame';
+            frame.id = frameId;
+            frame.style.left = `${frameData.x}px`;
+            frame.style.top = `${frameData.y}px`;
+            
+            frame.innerHTML = `
+                <div class="frame-header">
+                    <div class="frame-title">Frame ${frameData.number}</div>
+                    <div class="frame-actions">
+                        <button class="frame-btn delete-frame">×</button>
+                        <button class="frame-btn connect-frame">↗</button>
+                    </div>
+                </div>
+                <div class="frame-content">
+                    <textarea class="frame-text" placeholder="Describe el contenido de este frame...">${frameData.text || ''}</textarea>
+                    <div class="frame-media">
+                        <div class="media-preview" id="preview-${frameData.number}">
+                            ${frameData.media || '<span style="color: #666; font-size: 12px;">Sin medios</span>'}
+                        </div>
+                        <div class="media-actions">
+                            <button class="media-btn add-image">+ Imagen</button>
+                            <button class="media-btn add-video">+ Video</button>
+                            <button class="media-btn add-audio">+ Audio</button>
+                        </div>
+                    </div>
+                    <div class="frame-duration">
+                        <span class="duration-label">Duración (s):</span>
+                        <input type="number" class="duration-input" value="${frameData.duration || '5'}" min="0.5" step="0.5">
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('frames-container').appendChild(frame);
+            
+            // Agregar eventos al frame
+            const header = frame.querySelector('.frame-header');
+            header.addEventListener('mousedown', startDrag);
+            
+            const deleteBtn = frame.querySelector('.delete-frame');
+            deleteBtn.addEventListener('click', function() {
+                deleteFrame(frameId);
+            });
+            
+            const addImageBtn = frame.querySelector('.add-image');
+            addImageBtn.addEventListener('click', function() {
+                addMedia(frameId, 'image');
+            });
+            
+            const addVideoBtn = frame.querySelector('.add-video');
+            addVideoBtn.addEventListener('click', function() {
+                addMedia(frameId, 'video');
+            });
+            
+            const addAudioBtn = frame.querySelector('.add-audio');
+            addAudioBtn.addEventListener('click', function() {
+                addMedia(frameId, 'audio');
+            });
+            
+            // Agregar a la lista de frames
+            frames.push({
+                id: frameId,
+                element: frame,
+                number: frameData.number
+            });
+            
+            // Agregar evento para guardar automáticamente cuando se modifique el contenido
+            const textarea = frame.querySelector('.frame-text');
+            textarea.addEventListener('input', saveProject);
+            
+            const durationInput = frame.querySelector('.duration-input');
+            durationInput.addEventListener('change', saveProject);
+            
+            return frameId;
+        }
+
+        // Función para agregar un nuevo frame
+        function addFrame(x = null, y = null) {
+            frameCounter++;
+            const frameId = `frame-${frameCounter}`;
+            
+            // Crear elemento del frame
+            const frame = document.createElement('div');
+            frame.className = 'frame';
+            frame.id = frameId;
+            
+            // Posición inicial
+            if (x === null || y === null) {
+                // Posición centrada en la vista actual
+                const workspace = document.getElementById('workspace');
+                const container = document.getElementById('frames-container');
+                
+                const viewportCenterX = workspace.clientWidth / 2;
+                const viewportCenterY = workspace.clientHeight / 2;
+                
+                const containerRect = container.getBoundingClientRect();
+                const containerLeft = -parseInt(container.style.left || '0');
+                const containerTop = -parseInt(container.style.top || '0');
+                
+                x = (viewportCenterX / zoomLevel) + containerLeft - 150;
+                y = (viewportCenterY / zoomLevel) + containerTop - 100;
+            }
+            
+            frame.style.left = `${x}px`;
+            frame.style.top = `${y}px`;
+            
+            // Contenido del frame
+            frame.innerHTML = `
+                <div class="frame-header">
+                    <div class="frame-title">Frame ${frameCounter}</div>
+                    <div class="frame-actions">
+                        <button class="frame-btn delete-frame">×</button>
+                        <button class="frame-btn connect-frame">↗</button>
+                    </div>
+                </div>
+                <div class="frame-content">
+                    <textarea class="frame-text" placeholder="Describe el contenido de este frame..."></textarea>
+                    <div class="frame-media">
+                        <div class="media-preview" id="preview-${frameCounter}">
+                            <span style="color: #666; font-size: 12px;">Sin medios</span>
+                        </div>
+                        <div class="media-actions">
+                            <button class="media-btn add-image">+ Imagen</button>
+                            <button class="media-btn add-video">+ Video</button>
+                            <button class="media-btn add-audio">+ Audio</button>
+                        </div>
+                    </div>
+                    <div class="frame-duration">
+                        <span class="duration-label">Duración (s):</span>
+                        <input type="number" class="duration-input" value="5" min="0.5" step="0.5">
+                    </div>
+                </div>
+            `;
+            
+            // Agregar el frame al contenedor
+            document.getElementById('frames-container').appendChild(frame);
+            
+            // Agregar eventos al frame
+            const header = frame.querySelector('.frame-header');
+            header.addEventListener('mousedown', startDrag);
+            
+            const deleteBtn = frame.querySelector('.delete-frame');
+            deleteBtn.addEventListener('click', function() {
+                deleteFrame(frameId);
+            });
+            
+            const addImageBtn = frame.querySelector('.add-image');
+            addImageBtn.addEventListener('click', function() {
+                addMedia(frameId, 'image');
+            });
+            
+            const addVideoBtn = frame.querySelector('.add-video');
+            addVideoBtn.addEventListener('click', function() {
+                addMedia(frameId, 'video');
+            });
+            
+            const addAudioBtn = frame.querySelector('.add-audio');
+            addAudioBtn.addEventListener('click', function() {
+                addMedia(frameId, 'audio');
+            });
+            
+            // Agregar a la lista de frames
+            frames.push({
+                id: frameId,
+                element: frame,
+                number: frameCounter
+            });
+            
+            // Agregar evento para guardar automáticamente cuando se modifique el contenido
+            const textarea = frame.querySelector('.frame-text');
+            textarea.addEventListener('input', saveProject);
+            
+            const durationInput = frame.querySelector('.duration-input');
+            durationInput.addEventListener('change', saveProject);
+            
+            // Actualizar contador
+            document.getElementById('frame-count').textContent = frames.length;
+            
+            // Actualizar conexiones
+            updateConnections();
+            
+            // Guardar automáticamente
+            saveProject();
+            
+            return frameId;
+        }
+
+        // Función para eliminar un frame
+        function deleteFrame(frameId) {
+            const frameIndex = frames.findIndex(f => f.id === frameId);
+            if (frameIndex !== -1) {
+                // Si el frame a eliminar está seleccionado, deseleccionarlo
+                if (selectedFrame === frameId) {
+                    deselectFrame();
+                }
+                
+                // Eliminar el frame del DOM
+                const frameElement = document.getElementById(frameId);
+                frameElement.remove();
+                
+                // Eliminar de la lista de frames
+                frames.splice(frameIndex, 1);
+                
+                // Si no quedan frames, reiniciar el contador
+                if (frames.length === 0) {
+                    frameCounter = 0;
+                }
+                
+                // Actualizar contador
+                document.getElementById('frame-count').textContent = frames.length;
+                
+                // Actualizar conexiones
+                updateConnections();
+                
+                // Guardar automáticamente
+                saveProject();
+            }
+        }
+
+        // Función para agregar medios a un frame
+        function addMedia(frameId, type) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = type === 'image' ? 'image/*' : 
+                          type === 'video' ? 'video/*' : 'audio/*';
+            input.style.display = 'none';
+            
+            input.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const frameNumber = frameId.split('-')[1];
+                        const preview = document.getElementById(`preview-${frameNumber}`);
+                        
+                        if (type === 'image') {
+                            preview.innerHTML = `<img src="${e.target.result}" alt="Imagen del frame">`;
+                        } else if (type === 'video') {
+                            preview.innerHTML = `<video controls src="${e.target.result}"></video>`;
+                        } else {
+                            preview.innerHTML = `<audio controls src="${e.target.result}"></audio>`;
+                        }
+                        
+                        // Guardar automáticamente después de agregar medios
+                        saveProject();
+                    };
+                    
+                    reader.readAsDataURL(file);
+                }
+                
+                // Eliminar el input después de usarlo
+                input.remove();
+            });
+            
+            document.body.appendChild(input);
+            input.click();
+        }
+
+        // Funciones para arrastrar frames
+        function startDrag(e) {
+            e.stopPropagation();
+            const frame = e.currentTarget.parentElement;
+            selectFrame(frame.id);
+            
+            const rect = frame.getBoundingClientRect();
+            const offsetX = e.clientX - rect.left;
+            const offsetY = e.clientY - rect.top;
+            
+            function onMouseMove(e) {
+                const container = document.getElementById('frames-container');
+                const containerRect = container.getBoundingClientRect();
+                
+                const x = (e.clientX - containerRect.left) / zoomLevel - offsetX;
+                const y = (e.clientY - containerRect.top) / zoomLevel - offsetY;
+                
+                frame.style.left = `${x}px`;
+                frame.style.top = `${y}px`;
+                
+                // Actualizar conexiones mientras se arrastra
+                updateConnections();
+            }
+            
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                
+                // Guardar automáticamente después de mover el frame
+                saveProject();
+            }
+            
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+
+        // Funciones de pan (mover el lienzo)
+        function startPan(e) {
+            // Solo activar pan con el botón central del mouse
+            if (e.button !== 1) return;
+            
+            e.preventDefault();
+            isPanning = true;
+            document.getElementById('workspace').classList.add('panning');
+            
+            startPanX = e.clientX;
+            startPanY = e.clientY;
+            
+            const container = document.getElementById('frames-container');
+            initialScrollLeft = parseInt(container.style.left || '0');
+            initialScrollTop = parseInt(container.style.top || '0');
+            
+            function onMouseMove(e) {
+                if (!isPanning) return;
+                
+                const dx = e.clientX - startPanX;
+                const dy = e.clientY - startPanY;
+                
+                container.style.left = `${initialScrollLeft + dx}px`;
+                container.style.top = `${initialScrollTop + dy}px`;
+            }
+            
+            function onMouseUp() {
+                isPanning = false;
+                document.getElementById('workspace').classList.remove('panning');
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                
+                // Guardar automáticamente después de mover el lienzo
+                saveProject();
+            }
+            
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        }
+
+        // Función de zoom con la rueda del mouse
+        function handleZoom(e) {
+            e.preventDefault();
+            
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            zoomLevel = Math.max(0.2, Math.min(3, zoomLevel + delta));
+            
+            const container = document.getElementById('frames-container');
+            container.style.transform = `scale(${zoomLevel})`;
+            
+            // Actualizar información de zoom
+            document.getElementById('zoom-level').textContent = `${Math.round(zoomLevel * 100)}%`;
+            
+            // Guardar automáticamente después de cambiar el zoom
+            saveProject();
+        }
+
+        // Función para seleccionar un frame
+        function selectFrame(frameId) {
+            // Deseleccionar frame anterior si existe
+            if (selectedFrame) {
+                const previousFrame = document.getElementById(selectedFrame);
+                if (previousFrame) {
+                    previousFrame.classList.remove('selected');
+                }
+            }
+            
+            // Seleccionar nuevo frame
+            selectedFrame = frameId;
+            const frame = document.getElementById(frameId);
+            if (frame) {
+                frame.classList.add('selected');
+                
+                // Actualizar información del frame seleccionado
+                const frameNumber = frames.find(f => f.id === frameId).number;
+                document.getElementById('selected-frame-num').textContent = frameNumber;
+                document.getElementById('selected-frame-info').style.display = 'block';
+            }
+        }
+
+        // Función para deseleccionar frame
+        function deselectFrame() {
+            if (selectedFrame) {
+                const frame = document.getElementById(selectedFrame);
+                if (frame) {
+                    frame.classList.remove('selected');
+                }
+                selectedFrame = null;
+                document.getElementById('selected-frame-info').style.display = 'none';
+            }
+        }
+
+        // Función para copiar frame
+        function copyFrame() {
+            if (!selectedFrame) return;
+            
+            const frame = frames.find(f => f.id === selectedFrame);
+            if (frame) {
+                const frameElement = document.getElementById(selectedFrame);
+                copiedFrame = {
+                    text: frameElement.querySelector('.frame-text').value,
+                    duration: frameElement.querySelector('.duration-input').value,
+                    media: frameElement.querySelector('.media-preview').innerHTML
+                };
+            }
+        }
+
+        // Función para pegar frame
+        function pasteFrame() {
+            if (!copiedFrame) return;
+            
+            const newFrameId = addFrame();
+            const newFrame = document.getElementById(newFrameId);
+            
+            if (newFrame) {
+                newFrame.querySelector('.frame-text').value = copiedFrame.text;
+                newFrame.querySelector('.duration-input').value = copiedFrame.duration;
+                newFrame.querySelector('.media-preview').innerHTML = copiedFrame.media;
+            }
+        }
+
+        // Función para actualizar las conexiones entre frames
+        function updateConnections() {
+            const connections = document.getElementById('connections');
+            connections.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#4cc9f0"/></marker></defs>';
+            
+            // Conectar frames en orden (simulando una secuencia)
+            for (let i = 0; i < frames.length - 1; i++) {
+                const currentFrame = frames[i].element;
+                const nextFrame = frames[i + 1].element;
+                
+                const currentRect = currentFrame.getBoundingClientRect();
+                const nextRect = nextFrame.getBoundingClientRect();
+                const containerRect = document.getElementById('frames-container').getBoundingClientRect();
+                
+                // Calcular puntos de conexión
+                const startX = parseInt(currentFrame.style.left) + currentRect.width;
+                const startY = parseInt(currentFrame.style.top) + currentRect.height / 2;
+                
+                const endX = parseInt(nextFrame.style.left);
+                const endY = parseInt(nextFrame.style.top) + nextRect.height / 2;
+                
+                // Crear línea de conexión
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', `M ${startX} ${startY} C ${startX + 100} ${startY}, ${endX - 100} ${endY}, ${endX} ${endY}`);
+                path.setAttribute('class', 'connection');
+                
+                connections.appendChild(path);
+            }
+        }
+
+        // Manejo de teclas
+        function handleKeydown(e) {
+            // Prevenir comportamiento por defecto para las teclas que usamos
+            if (e.key === '+' || e.key === '-' || (e.ctrlKey && (e.key >= '1' && e.key <= '9')) || 
+                (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 's' || e.key === 'l' || e.key === 'n' || e.key === 'e' || e.key === 'i'))) {
+                e.preventDefault();
+            }
+            
+            // Agregar frame con '+'
+            if (e.key === '+') {
+                addFrame();
+            }
+            
+            // Eliminar frame seleccionado con '-'
+            if (e.key === '-' && selectedFrame) {
+                deleteFrame(selectedFrame);
+            }
+            
+            // Seleccionar frame con Ctrl + número
+            if (e.ctrlKey && e.key >= '1' && e.key <= '9') {
+                const frameNumber = parseInt(e.key);
+                if (frameNumber <= frames.length) {
+                    const frameId = `frame-${frameNumber}`;
+                    selectFrame(frameId);
+                }
+            }
+            
+            // Copiar y pegar frames
+            if (e.ctrlKey && e.key === 'c') {
+                copyFrame();
+            }
+            
+            if (e.ctrlKey && e.key === 'v') {
+                pasteFrame();
+            }
+            
+            // Guardar proyecto con Ctrl + S
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveProject();
+            }
+            
+            // Cargar proyecto con Ctrl + L
+            if (e.ctrlKey && e.key === 'l') {
+                e.preventDefault();
+                loadProject();
+            }
+            
+            // Nuevo proyecto con Ctrl + N
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                newProject();
+            }
+            
+            // Exportar proyecto con Ctrl + E
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                exportProject();
+            }
+            
+            // Importar proyecto con Ctrl + I
+            if (e.ctrlKey && e.key === 'i') {
+                e.preventDefault();
+                importProject();
+            }
+            
+            // Deseleccionar frame con Escape
+            if (e.key === 'Escape') {
+                deselectFrame();
+            }
+        }
+
+        // Mostrar/ocultar ayuda
+        function toggleHelp() {
+            const helpOverlay = document.getElementById('help-overlay');
+            helpOverlay.style.display = helpOverlay.style.display === 'block' ? 'none' : 'block';
+        }
+    </script>
+</body>
+</html>

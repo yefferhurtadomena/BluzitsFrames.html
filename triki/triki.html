@@ -1,0 +1,2160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grid Conquest Arena | Battle Royale</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* RESET Y BASE EPICA */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #b967ff;
+            --neon-pink: #ff2a6d;
+            --neon-green: #39ff14;
+            --neon-orange: #ff7b00;
+            --dark-bg: #0a0a16;
+            --darker-bg: #050510;
+            --hud-bg: rgba(10, 15, 30, 0.95);
+            --grid-color: rgba(0, 243, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--darker-bg);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            font-weight: 500;
+        }
+
+        /* EFECTO DE PARTÍCULAS DE FONDO */
+        #particles-container {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            opacity: 0.5;
+        }
+
+        /* PANTALLAS */
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+        }
+
+        .screen.active {
+            display: flex;
+            opacity: 1;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        /* TÍTULOS NEON */
+        .neon-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 3.5rem;
+            font-weight: 900;
+            text-align: center;
+            color: transparent;
+            background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple), var(--neon-pink));
+            -webkit-background-clip: text;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.7);
+            margin-bottom: 0.5rem;
+            animation: glow-pulse 2s ease-in-out infinite alternate;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            letter-spacing: 3px;
+            color: var(--neon-green);
+            margin-bottom: 2rem;
+        }
+
+        @keyframes glow-pulse {
+            from { text-shadow: 0 0 20px rgba(0, 243, 255, 0.7); }
+            to { text-shadow: 0 0 30px rgba(185, 103, 255, 0.9), 0 0 40px rgba(255, 42, 109, 0.6); }
+        }
+
+        /* TARJETA DE MENÚ MEJORADA */
+        .menu-card {
+            background: linear-gradient(135deg, rgba(10, 15, 30, 0.95), rgba(5, 10, 25, 0.95));
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(0, 243, 255, 0.4);
+            border-radius: 20px;
+            padding: 2rem;
+            min-width: 700px;
+            max-width: 90vw;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 0 60px rgba(0, 243, 255, 0.3), 
+                        inset 0 0 20px rgba(0, 243, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        .menu-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.2), transparent);
+            transition: left 0.8s;
+        }
+
+        .menu-card:hover::before {
+            left: 100%;
+        }
+
+        .menu-card h2 {
+            font-size: 1.8rem;
+            color: var(--neon-blue);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.7);
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .menu-card h2::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 25%;
+            width: 50%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+        }
+
+        /* LISTA DE GUERREROS */
+        .warriors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+            max-height: 150px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .warrior-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .warrior-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--neon-green);
+            box-shadow: 0 5px 15px rgba(57, 255, 20, 0.3);
+        }
+
+        .warrior-icon {
+            font-size: 1.5rem;
+            filter: drop-shadow(0 0 5px currentColor);
+        }
+
+        .warrior-name {
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+
+        /* FORMULARIOS NEON */
+        .neon-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            border: none;
+            padding: 1rem;
+            color: white;
+            font-size: 1.1rem;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-border {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            transition: width 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            background: rgba(0, 0, 0, 0.6);
+            border-color: rgba(0, 243, 255, 0.3);
+        }
+
+        .input-group input:focus + .input-border {
+            width: 100%;
+        }
+
+        /* SELECCIÓN DE ICONOS MEJORADA */
+        .icon-selection {
+            margin: 1rem 0;
+        }
+
+        .icon-selection label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--neon-blue);
+            text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+        }
+
+        .icons-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .icon-option {
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .icon-option input {
+            display: none;
+        }
+
+        .icon-display {
+            display: block;
+            font-size: 1.8rem;
+            padding: 0.5rem;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .icon-option input:checked + .icon-display {
+            border-color: var(--neon-pink);
+            background: rgba(255, 42, 109, 0.2);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 42, 109, 0.5);
+            filter: drop-shadow(0 0 10px var(--neon-pink));
+        }
+
+        /* BOTONES EPICOS */
+        .neon-button, .start-button {
+            position: relative;
+            background: linear-gradient(45deg, transparent 50%, rgba(0, 243, 255, 0.1));
+            border: 2px solid var(--neon-blue);
+            color: white;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .neon-button:hover {
+            background: rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .start-button {
+            border-color: var(--neon-green);
+            background: linear-gradient(45deg, transparent 50%, rgba(57, 255, 20, 0.1));
+            width: 100%;
+            margin-top: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .start-button:not(:disabled):hover {
+            background: rgba(57, 255, 20, 0.2);
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.5);
+        }
+
+        .button-glow, .pulse-glow {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.6s;
+        }
+
+        .neon-button:hover .button-glow {
+            left: 100%;
+        }
+
+        .start-button .pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0; left: -100%; }
+            50% { opacity: 1; left: 100%; }
+        }
+
+        /* HUD DE BATALLA - MÁS COMPACTO */
+        .battle-hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 0.8rem 1.5rem;
+            background: var(--hud-bg);
+            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+            height: 80px;
+        }
+
+        .hud-section {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* TEMPORIZADOR EPICO */
+        .timer-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .time-display {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--neon-green);
+            text-shadow: 0 0 10px currentColor;
+            margin-bottom: 0.3rem;
+        }
+
+        .time-bar {
+            width: 200px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .time-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-green), var(--neon-blue));
+            width: 100%;
+            transition: width 1s linear;
+        }
+
+        /* INFO DEL GUERRERO ACTUAL */
+        .current-warrior {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .turn-label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--neon-blue);
+            margin-bottom: 0.3rem;
+            text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+        }
+
+        .warrior-info {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--neon-pink);
+            text-shadow: 0 0 5px currentColor;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* TEMPORIZADOR DE TURNO */
+        .turn-timer-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .turn-time-display {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--neon-orange);
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        /* INPUT TÁCTICO EN EL HUD */
+        .tactical-input-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tactical-input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 5px;
+            padding: 0.5rem;
+            color: white;
+            font-size: 1.1rem;
+            text-align: center;
+            width: 120px;
+            font-family: 'Orbitron', monospace;
+            text-transform: uppercase;
+        }
+
+        .tactical-input:focus {
+            outline: none;
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        .input-help {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            margin-top: 0.2rem;
+        }
+
+        /* TABLERO HOLOGRÁFICO MEJORADO - OCUPA TODO EL ESPACIO */
+        .arena-container {
+            position: absolute;
+            top: 80px;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 80px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            overflow: auto;
+        }
+
+        .holographic-grid {
+            display: grid;
+            gap: 2px;
+            background: var(--grid-color);
+            border: 2px solid rgba(0, 243, 255, 0.3);
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.2);
+            position: relative;
+            max-height: 100%;
+            max-width: 100%;
+            aspect-ratio: 1/1;
+            animation: gridGlow 3s ease-in-out infinite alternate;
+            /* Nuevas propiedades para ocupar más espacio */
+            width: 95vmin;
+            height: 95vmin;
+        }
+
+        @keyframes gridGlow {
+            0% { box-shadow: 0 0 30px rgba(0, 243, 255, 0.2); }
+            100% { box-shadow: 0 0 60px rgba(0, 243, 255, 0.4), 0 0 80px rgba(185, 103, 255, 0.2); }
+        }
+
+        .holographic-grid::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple), transparent);
+            border-radius: 12px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        /* CELDAS DEL TABLERO CON COORDENADAS VISIBLES MEJORADAS */
+        .grid-cell {
+            background: rgba(10, 20, 40, 0.7);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            color: rgba(0, 243, 255, 0.8);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            /* Tamaño dinámico para ocupar más espacio */
+            min-width: 20px;
+            min-height: 20px;
+            width: 100%;
+            height: 100%;
+            font-size: 2.5vmin; /* Tamaño de fuente relativo */
+        }
+
+        .grid-cell:hover {
+            background: rgba(0, 243, 255, 0.1);
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+        }
+
+        .coord-text {
+            font-size: 1.5vmin; /* Tamaño relativo para las coordenadas */
+            font-weight: 700;
+            text-align: center;
+            line-height: 1;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 0 5px rgba(0, 243, 255, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .coord-number, .coord-letter {
+            display: inline;
+        }
+
+        .grid-cell.occupied {
+            font-size: 4vmin; /* Tamaño relativo para iconos ocupados */
+            color: white;
+            text-shadow: 0 0 10px currentColor;
+            animation: iconPop 0.4s ease-out;
+        }
+
+        @keyframes iconPop {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .grid-cell.occupied::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: currentColor;
+            opacity: 0.1;
+            z-index: -1;
+        }
+
+        /* CELDA CON TRIKI - FONDO NEGRO */
+        .grid-cell.triki {
+            background: rgba(0, 0, 0, 0.9) !important;
+        }
+
+        /* CELDAS ESPECIALES */
+        .grid-cell.trap {
+            background: rgba(255, 42, 109, 0.3);
+        }
+
+        .grid-cell.bonus {
+            background: rgba(57, 255, 20, 0.3);
+        }
+
+        /* LÍNEAS GANADORAS DESTACADAS */
+        .winning-line {
+            position: relative;
+            z-index: 5;
+        }
+
+        .winning-line::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: currentColor;
+            opacity: 0.2;
+            z-index: -1;
+            animation: pulseWin 1.5s infinite alternate;
+        }
+
+        @keyframes pulseWin {
+            0% { opacity: 0.1; }
+            100% { opacity: 0.3; }
+        }
+
+        /* SCOREBOARD */
+        .scoreboard {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .score-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .score-item.active {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 10px rgba(255, 42, 109, 0.5);
+            transform: scale(1.05);
+        }
+
+        .score-item .warrior-icon {
+            font-size: 1.2rem;
+        }
+
+        .score-value {
+            font-weight: 700;
+            color: var(--neon-green);
+            font-family: 'Orbitron', monospace;
+            text-shadow: 0 0 5px rgba(57, 255, 20, 0.5);
+        }
+
+        /* PANTALLA DE RESULTADOS */
+        .results-screen {
+            background: rgba(5, 5, 16, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 15px;
+            border: 2px solid var(--neon-purple);
+            box-shadow: 0 0 50px rgba(185, 103, 255, 0.3);
+            text-align: center;
+            max-width: 600px;
+            animation: resultsEnter 0.8s ease-out;
+        }
+
+        @keyframes resultsEnter {
+            from { opacity: 0; transform: scale(0.8) translateY(50px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .winner-title {
+            font-size: 3rem;
+            color: var(--neon-green);
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px currentColor;
+        }
+
+        .winner-name {
+            font-size: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .final-scores {
+            margin: 2rem 0;
+        }
+
+        .final-score-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .restart-button {
+            margin-top: 2rem;
+            font-size: 1.3rem;
+            padding: 1rem 2rem;
+        }
+
+        /* ANIMACIONES DE PARTÍCULAS */
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(180deg); }
+        }
+
+        .floating-icon {
+            animation: float 3s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        /* ALERTAS CENTRADAS - CON AUTO-CIERRE */
+        .centered-alert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 15, 30, 0.95);
+            border: 2px solid var(--neon-pink);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 0 30px rgba(255, 42, 109, 0.5);
+            backdrop-filter: blur(10px);
+            max-width: 400px;
+            width: 90%;
+            animation: alertPop 0.3s ease-out;
+        }
+
+        @keyframes alertPop {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .alert-title {
+            font-size: 1.5rem;
+            color: var(--neon-pink);
+            margin-bottom: 1rem;
+            text-shadow: 0 0 10px rgba(255, 42, 109, 0.7);
+        }
+
+        .alert-message {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            color: white;
+        }
+
+        .alert-button {
+            background: var(--neon-pink);
+            border: none;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .alert-button:hover {
+            background: #ff1a5e;
+            box-shadow: 0 0 15px rgba(255, 42, 109, 0.7);
+        }
+
+        /* MODAL DE ELIMINACIÓN DE TRIKI */
+        .triki-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .triki-modal-content {
+            background: rgba(10, 15, 30, 0.95);
+            border: 2px solid var(--neon-green);
+            border-radius: 15px;
+            padding: 2rem;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(57, 255, 20, 0.3);
+        }
+
+        .triki-modal-title {
+            font-size: 1.8rem;
+            color: var(--neon-green);
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 10px rgba(57, 255, 20, 0.7);
+        }
+
+        .triki-timer {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            color: var(--neon-orange);
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 10px rgba(255, 123, 0, 0.7);
+        }
+
+        .triki-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .triki-cell {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .triki-cell.selected {
+            border-color: var(--neon-green);
+            background: rgba(57, 255, 20, 0.2);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.5);
+        }
+
+        .triki-cell .triki-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .triki-cell .remove-x {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            color: var(--neon-pink);
+            font-weight: bold;
+            font-size: 1.2rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .triki-cell.selected .remove-x {
+            opacity: 1;
+        }
+
+        /* ANIMACIÓN DE CELDA ESPECIAL */
+        .special-cell-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            z-index: 1500;
+            animation: specialCellPop 1.5s ease-out;
+            text-shadow: 0 0 20px currentColor;
+        }
+
+        @keyframes specialCellPop {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .neon-title {
+                font-size: 2.5rem;
+            }
+            
+            .menu-card {
+                min-width: unset;
+                width: 95%;
+                padding: 1rem;
+            }
+            
+            .warriors-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .battle-hud {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+                height: auto;
+            }
+            
+            .holographic-grid {
+                max-height: 60vh;
+            }
+            
+            .coord-text {
+                font-size: 0.5rem;
+            }
+            
+            .icons-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+            
+            .tactical-input-container {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+
+        #battle-grid{
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- FONDO CON PARTÍCULAS -->
+    <div id="particles-container"></div>
+    
+    <!-- PANTALLA DE INICIO -->
+    <div id="main-menu" class="screen active">
+        <div class="neon-container">
+            <h1 class="neon-title">GRID CONQUEST</h1>
+            <div class="subtitle">BATTLE ROYALE</div>
+            
+            <div class="menu-card">
+                <h2>👥 REGISTRO DE GUERREROS</h2>
+                <div id="warriors-list" class="warriors-grid"></div>
+                
+                <form id="warrior-form" class="neon-form">
+                    <div class="input-group">
+                        <input type="text" id="warrior-name" placeholder="Nombre del guerrero" required maxlength="15" autofocus>
+                        <span class="input-border"></span>
+                    </div>
+                    
+                    <div class="icon-selection">
+                        <label>Elige tu arma:</label>
+                        <div class="icons-grid">
+                            <!-- 30 iconos diferentes -->
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="⚔️" required>
+                                <span class="icon-display">⚔️</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🛡️">
+                                <span class="icon-display">🛡️</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🏹">
+                                <span class="icon-display">🏹</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🔮">
+                                <span class="icon-display">🔮</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="💫">
+                                <span class="icon-display">💫</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🔥">
+                                <span class="icon-display">🔥</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="⚡">
+                                <span class="icon-display">⚡</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="❄️">
+                                <span class="icon-display">❄️</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🌪️">
+                                <span class="icon-display">🌪️</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="💥">
+                                <span class="icon-display">💥</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🌟">
+                                <span class="icon-display">🌟</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🌀">
+                                <span class="icon-display">🌀</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🌑">
+                                <span class="icon-display">🌑</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🌕">
+                                <span class="icon-display">🌕</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="⭐">
+                                <span class="icon-display">⭐</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🌈">
+                                <span class="icon-display">🌈</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🌺">
+                                <span class="icon-display">🌺</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🍀">
+                                <span class="icon-display">🍀</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🎯">
+                                <span class="icon-display">🎯</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🎮">
+                                <span class="icon-display">🎮</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🎲">
+                                <span class="icon-display">🎲</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🎪">
+                                <span class="icon-display">🎪</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🎭">
+                                <span class="icon-display">🎭</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🎨">
+                                <span class="icon-display">🎨</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🧩">
+                                <span class="icon-display">🧩</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🧠">
+                                <span class="icon-display">🧠</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🦄">
+                                <span class="icon-display">🦄</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🐉">
+                                <span class="icon-display">🐉</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" name="icon" value="🦅">
+                                <span class="icon-display">🦅</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="neon-button">
+                        <span>AGREGAR GUERRERO</span>
+                        <div class="button-glow"></div>
+                    </button>
+                </form>
+                
+                <button id="start-battle-btn" class="start-button" disabled>
+                    <span>INICIAR BATALLA (30:00)</span>
+                    <div class="pulse-glow"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE BATALLA -->
+    <div id="battle-arena" class="screen">
+        <!-- HUD DE BATALLA - MÁS COMPACTO -->
+        <div class="battle-hud">
+            <div class="hud-section">
+                <div class="timer-container">
+                    <div class="time-display" id="battle-timer">30:00</div>
+                    <div class="time-bar">
+                        <div class="time-progress" id="time-progress"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hud-section">
+                <div class="current-warrior">
+                    <span class="turn-label">TURNO ACTUAL:</span>
+                    <span class="warrior-info" id="warrior-info">-</span>
+                </div>
+            </div>
+            
+            <div class="hud-section">
+                <div class="turn-timer-container">
+                    <div class="turn-label">TIEMPO DE TURNO:</div>
+                    <div class="turn-time-display" id="turn-time">10s</div>
+                </div>
+            </div>
+            
+            <div class="hud-section">
+                <div class="tactical-input-container">
+                    <input type="text" id="tactical-input" class="tactical-input" placeholder="Ej: 7D" maxlength="3" autocomplete="off" autofocus>
+                    <div class="input-help">ENTER para colocar</div>
+                </div>
+            </div>
+            
+            <div class="hud-section">
+                <div class="scoreboard" id="scoreboard"></div>
+            </div>
+        </div>
+
+        <!-- TABLERO HOLOGRÁFICO -->
+        <div class="arena-container">
+            <div id="battle-grid" class="holographic-grid"></div>
+        </div>
+    </div>
+
+    <!-- PANTALLA DE RESULTADOS -->
+    <div id="results-screen" class="screen">
+        <div class="results-screen">
+            <h2 class="winner-title">¡BATALLA TERMINADA!</h2>
+            <div id="winner-display" class="winner-name">
+                <span id="winner-icon" class="floating-icon"></span>
+                <span id="winner-name">-</span>
+            </div>
+            <div class="final-scores" id="final-scores"></div>
+            <button id="restart-btn" class="neon-button restart-button">
+                <span>NUEVA BATALLA</span>
+                <div class="button-glow"></div>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURACIÓN DEL JUEGO
+        const CONFIG = {
+            totalTime: 30 * 60, // 30 minutos en segundos
+            turnTime: 10, // 10 segundos por turno (cambiado de 20 a 10)
+            boardSize: 20, // Aumentado de 15 a 20 para más celdas
+            minPlayers: 2,
+            maxPlayers: 6,
+            winScore: 5, // Puntuación para ganar
+            specialCells: 0.1 // 10% de celdas especiales
+        };
+
+        // ESTADO DEL JUEGO
+        const gameState = {
+            players: [],
+            currentPlayerIndex: 0,
+            board: [],
+            isBattleActive: false,
+            timerInterval: null,
+            turnTimerInterval: null,
+            timeRemaining: CONFIG.totalTime,
+            turnTimeRemaining: CONFIG.turnTime,
+            scores: {},
+            moves: 0,
+            winningLines: [],
+            usedIcons: new Set(),
+            specialPowerUsed: false,
+            specialCells: [] // Almacena las celdas especiales
+        };
+
+        // ELEMENTOS DEL DOM
+        const mainMenu = document.getElementById('main-menu');
+        const battleArena = document.getElementById('battle-arena');
+        const resultsScreen = document.getElementById('results-screen');
+        const warriorsList = document.getElementById('warriors-list');
+        const warriorForm = document.getElementById('warrior-form');
+        const warriorNameInput = document.getElementById('warrior-name');
+        const startBattleBtn = document.getElementById('start-battle-btn');
+        const battleGrid = document.getElementById('battle-grid');
+        const battleTimer = document.getElementById('battle-timer');
+        const timeProgress = document.getElementById('time-progress');
+        const warriorInfo = document.getElementById('warrior-info');
+        const scoreboard = document.getElementById('scoreboard');
+        const tacticalInput = document.getElementById('tactical-input');
+        const winnerIcon = document.getElementById('winner-icon');
+        const winnerName = document.getElementById('winner-name');
+        const finalScores = document.getElementById('final-scores');
+        const restartBtn = document.getElementById('restart-btn');
+        const particlesContainer = document.getElementById('particles-container');
+        const turnTime = document.getElementById('turn-time');
+
+        // INICIALIZACIÓN
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            initializeEventListeners();
+            
+            // Enfocar el input de nombre al cargar
+            warriorNameInput.focus();
+            
+            // Ajustar el tamaño del tablero al cambiar el tamaño de la ventana
+            window.addEventListener('resize', adjustGridSize);
+        });
+
+        // CREAR PARTÍCULAS DE FONDO
+        function createParticles() {
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.animation = `float ${10 + Math.random() * 20}s infinite ease-in-out`;
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // AJUSTAR TAMAÑO DEL TABLERO
+        function adjustGridSize() {
+            if (!battleGrid) return;
+            
+            // Asegurarse de que el tablero ocupe el máximo espacio disponible
+            const arenaContainer = document.querySelector('.arena-container');
+            const hudHeight = document.querySelector('.battle-hud').offsetHeight;
+            const availableHeight = window.innerHeight - hudHeight;
+            const availableWidth = window.innerWidth;
+            
+            // Usar el 95% del espacio disponible
+            const gridSize = Math.min(availableHeight, availableWidth) * 0.95;
+            
+            battleGrid.style.width = `${gridSize}px`;
+            battleGrid.style.height = `${gridSize}px`;
+        }
+
+        // INICIALIZAR EVENT LISTENERS
+        function initializeEventListeners() {
+            warriorForm.addEventListener('submit', addPlayer);
+            startBattleBtn.addEventListener('click', startBattle);
+            
+            // Usar Enter para procesar movimiento
+            tacticalInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    processMove();
+                    e.preventDefault();
+                }
+            });
+            
+            // Permitir navegación por teclado en el menú
+            document.addEventListener('keydown', handleGlobalKeydown);
+            
+            restartBtn.addEventListener('click', restartGame);
+        }
+
+        // MANEJAR TECLAS GLOBALES
+        function handleGlobalKeydown(e) {
+            // Si estamos en la pantalla de batalla, enfocar el input táctico
+            if (battleArena.classList.contains('active') && e.key !== 'Enter') {
+                tacticalInput.focus();
+            }
+            
+            // Permitir Escape para salir de modales
+            if (e.key === 'Escape') {
+                const activeModal = document.querySelector('.centered-alert, .triki-modal');
+                if (activeModal) {
+                    document.body.removeChild(activeModal);
+                    playSound('close');
+                }
+            }
+        }
+
+        // AÑADIR JUGADOR
+        function addPlayer(e) {
+            e.preventDefault();
+            
+            const name = warriorNameInput.value.trim();
+            const iconInput = document.querySelector('input[name="icon"]:checked');
+            
+            if (!name || !iconInput) {
+                showCenteredAlert('Error', 'Por favor, completa todos los campos');
+                return;
+            }
+            
+            if (gameState.players.length >= CONFIG.maxPlayers) {
+                showCenteredAlert('Límite alcanzado', `Máximo ${CONFIG.maxPlayers} jugadores permitidos`);
+                return;
+            }
+            
+            // Verificar si el icono ya está en uso
+            if (gameState.usedIcons.has(iconInput.value)) {
+                showCenteredAlert('Icono no disponible', 'Este icono ya está siendo usado por otro jugador');
+                return;
+            }
+            
+            const newPlayer = {
+                id: gameState.players.length,
+                name: name,
+                icon: iconInput.value,
+                color: getPlayerColor(gameState.players.length),
+                trikis: 0
+            };
+            
+            gameState.players.push(newPlayer);
+            gameState.scores[newPlayer.id] = 0;
+            gameState.usedIcons.add(iconInput.value);
+            
+            updateWarriorsList();
+            warriorForm.reset();
+            
+            // Habilitar el botón de inicio si hay suficientes jugadores
+            startBattleBtn.disabled = gameState.players.length < CONFIG.minPlayers;
+            
+            showNotification(`¡Guerrero ${name} agregado!`, 'success');
+            playSound('add');
+            
+            // Volver a enfocar el input de nombre
+            warriorNameInput.focus();
+        }
+
+        // ACTUALIZAR LISTA DE GUERREROS
+        function updateWarriorsList() {
+            warriorsList.innerHTML = '';
+            
+            gameState.players.forEach(player => {
+                const warriorCard = document.createElement('div');
+                warriorCard.className = 'warrior-card';
+                warriorCard.innerHTML = `
+                    <span class="warrior-icon">${player.icon}</span>
+                    <span class="warrior-name">${player.name}</span>
+                `;
+                warriorsList.appendChild(warriorCard);
+            });
+        }
+
+        // INICIAR BATALLA
+        function startBattle() {
+            if (gameState.players.length < CONFIG.minPlayers) {
+                showCenteredAlert('Jugadores insuficientes', `Se necesitan al menos ${CONFIG.minPlayers} guerreros para comenzar`);
+                return;
+            }
+            
+            // Cambiar a pantalla de batalla
+            mainMenu.classList.remove('active');
+            battleArena.classList.add('active');
+            
+            // Inicializar el juego
+            initializeBattle();
+            
+            showNotification('¡Que comience la batalla!', 'success');
+            playSound('start');
+            
+            // Ajustar el tamaño del tablero
+            setTimeout(adjustGridSize, 100);
+            
+            // Enfocar el input táctico
+            tacticalInput.focus();
+        }
+
+        // INICIALIZAR BATALLA
+        function initializeBattle() {
+            gameState.isBattleActive = true;
+            gameState.timeRemaining = CONFIG.totalTime;
+            gameState.turnTimeRemaining = CONFIG.turnTime;
+            gameState.moves = 0;
+            gameState.currentPlayerIndex = 0;
+            gameState.winningLines = [];
+            gameState.specialPowerUsed = false;
+            gameState.specialCells = [];
+            
+            // Reiniciar puntuaciones y trikis
+            gameState.players.forEach(player => {
+                gameState.scores[player.id] = 0;
+                player.trikis = 0;
+            });
+            
+            // Crear tablero vacío
+            gameState.board = Array(CONFIG.boardSize).fill().map(() => Array(CONFIG.boardSize).fill(null));
+            
+            // Generar celdas especiales
+            generateSpecialCells();
+            
+            // Generar la cuadrícula
+            createBattleGrid();
+            
+            // Iniciar temporizador
+            startBattleTimer();
+            startTurnTimer();
+            
+            // Actualizar interfaz
+            updateBattleUI();
+            updateScoreboard();
+        }
+
+        // GENERAR CELDAS ESPECIALES
+        function generateSpecialCells() {
+            const totalCells = CONFIG.boardSize * CONFIG.boardSize;
+            const numSpecialCells = Math.floor(totalCells * CONFIG.specialCells);
+            
+            for (let i = 0; i < numSpecialCells; i++) {
+                const row = Math.floor(Math.random() * CONFIG.boardSize);
+                const col = Math.floor(Math.random() * CONFIG.boardSize);
+                
+                // 50% de probabilidad de ser trampa, 50% de ser beneficio
+                const type = Math.random() > 0.5 ? 'trap' : 'bonus';
+                
+                gameState.specialCells.push({ row, col, type });
+            }
+        }
+
+        // CREAR TABLERO DE BATALLA
+        function createBattleGrid() {
+            battleGrid.innerHTML = '';
+            
+            // Configurar el grid con tamaño dinámico
+            battleGrid.style.gridTemplateColumns = `repeat(${CONFIG.boardSize}, 1fr)`;
+            battleGrid.style.gridTemplateRows = `repeat(${CONFIG.boardSize}, 1fr)`;
+
+            for (let row = 0; row < CONFIG.boardSize; row++) {
+                for (let col = 0; col < CONFIG.boardSize; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    
+                    // Coordenadas más visibles y atractivas
+                    const coordX = row + 1;
+                    const coordY = String.fromCharCode(65 + col); // A, B, C...
+                    cell.dataset.coord = `${coordX}${coordY}`;
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    // Verificar si es una celda especial
+                    const specialCell = gameState.specialCells.find(sc => sc.row === row && sc.col === col);
+                    if (specialCell) {
+                        cell.classList.add(specialCell.type);
+                    }
+                    
+                    // Texto de coordenadas en horizontal
+                    cell.innerHTML = `
+                        <div class="coord-text">
+                            <span class="coord-number">${coordX}</span>
+                            <span class="coord-letter">${coordY}</span>
+                        </div>
+                    `;
+                    
+                    battleGrid.appendChild(cell);
+                }
+            }
+            
+            // Ajustar el tamaño después de crear el tablero
+            adjustGridSize();
+        }
+
+        // INICIAR TEMPORIZADOR DE BATALLA
+        function startBattleTimer() {
+            clearInterval(gameState.timerInterval);
+            
+            gameState.timerInterval = setInterval(() => {
+                gameState.timeRemaining--;
+                
+                // Actualizar el temporizador en pantalla
+                const minutes = Math.floor(gameState.timeRemaining / 60);
+                const seconds = gameState.timeRemaining % 60;
+                battleTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                // Actualizar barra de progreso
+                const progressPercent = (gameState.timeRemaining / CONFIG.totalTime) * 100;
+                timeProgress.style.width = `${progressPercent}%`;
+                
+                // Cambiar color cuando queda poco tiempo
+                if (gameState.timeRemaining <= 60) { // 1 minuto
+                    battleTimer.style.color = 'var(--neon-pink)';
+                    timeProgress.style.background = 'var(--neon-pink)';
+                    
+                    if (gameState.timeRemaining <= 10) {
+                        battleTimer.style.animation = 'pulse 0.5s infinite alternate';
+                    }
+                }
+                
+                // Comprobar si se acabó el tiempo
+                if (gameState.timeRemaining <= 0) {
+                    endBattle();
+                }
+            }, 1000);
+        }
+
+        // INICIAR TEMPORIZADOR DE TURNO
+        function startTurnTimer() {
+            clearInterval(gameState.turnTimerInterval);
+            gameState.turnTimeRemaining = CONFIG.turnTime;
+            turnTime.textContent = `${gameState.turnTimeRemaining}s`;
+            
+            gameState.turnTimerInterval = setInterval(() => {
+                gameState.turnTimeRemaining--;
+                turnTime.textContent = `${gameState.turnTimeRemaining}s`;
+                
+                // Cambiar color cuando queda poco tiempo
+                if (gameState.turnTimeRemaining <= 5) {
+                    turnTime.style.color = 'var(--neon-pink)';
+                    turnTime.style.animation = 'pulse 0.5s infinite alternate';
+                }
+                
+                // Si se acaba el tiempo del turno, pasar al siguiente jugador
+                if (gameState.turnTimeRemaining <= 0) {
+                    showNotification(`¡Tiempo agotado! Turno de ${gameState.players[gameState.currentPlayerIndex].name} terminado`, 'error');
+                    nextTurn();
+                }
+            }, 1000);
+        }
+
+        // PROCESAR MOVIMIENTO
+        function processMove() {
+            if (!gameState.isBattleActive) return;
+            
+            const coordString = tacticalInput.value.trim().toUpperCase();
+            if (!coordString) {
+                showCenteredAlert('Coordenada vacía', 'Ingresa una coordenada válida', 3000);
+                return;
+            }
+            
+            // Decodificar la coordenada (ej: "5D" -> row=4, col=3)
+            const match = coordString.match(/^(\d+)([A-Z])$/);
+            if (!match) {
+                showCenteredAlert('Formato inválido', 'Usa formato como "5D" o "12G"', 3000);
+                return;
+            }
+            
+            const row = parseInt(match[1]) - 1; // Restar 1 porque el array empieza en 0
+            const col = match[2].charCodeAt(0) - 65; // 'A'=0, 'B'=1, etc.
+            
+            // Validar que la coordenada esté dentro del tablero
+            if (row < 0 || row >= CONFIG.boardSize || col < 0 || col >= CONFIG.boardSize) {
+                showCenteredAlert('Fuera de límites', 'Coordenada fuera de los límites del tablero', 3000);
+                return;
+            }
+            
+            // Validar que la celda esté vacía
+            if (gameState.board[row][col] !== null) {
+                showCenteredAlert('Celda ocupada', '¡Esa celda ya está ocupada!', 3000);
+                return;
+            }
+            
+            // COLOCAR LA FICHA
+            const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+            gameState.board[row][col] = currentPlayer.id;
+            gameState.moves++;
+            
+            // Actualizar la celda en el DOM
+            const cellElement = document.querySelector(`.grid-cell[data-row="${row}"][data-col="${col}"]`);
+            cellElement.innerHTML = currentPlayer.icon;
+            cellElement.classList.add('occupied');
+            cellElement.style.color = currentPlayer.color;
+            cellElement.style.textShadow = `0 0 10px ${currentPlayer.color}`;
+            
+            // Verificar si es una celda especial
+            const specialCell = gameState.specialCells.find(sc => sc.row === row && sc.col === col);
+            if (specialCell) {
+                handleSpecialCell(specialCell, currentPlayer, cellElement);
+            } else {
+                // Efecto visual normal al colocar ficha
+                createPlacementEffect(cellElement, currentPlayer.color);
+            }
+            
+            // CALCULAR PUNTUACIÓN (Buscar líneas formadas)
+            const result = calculateScore(row, col, currentPlayer.id);
+            const pointsEarned = result.points;
+            const winningLines = result.lines;
+            
+            if (pointsEarned > 0) {
+                gameState.scores[currentPlayer.id] += pointsEarned;
+                currentPlayer.trikis += pointsEarned;
+                
+                // Marcar celdas con triki
+                winningLines.forEach(line => {
+                    line.forEach(cell => {
+                        const trikiCell = document.querySelector(`.grid-cell[data-row="${cell.row}"][data-col="${cell.col}"]`);
+                        trikiCell.classList.add('triki');
+                    });
+                });
+                
+                // Verificar si el jugador alcanzó 5 trikis para obtener poder especial
+                if (currentPlayer.trikis >= CONFIG.winScore && !gameState.specialPowerUsed) {
+                    gameState.specialPowerUsed = true;
+                    showTrikiEliminationModal(currentPlayer.id);
+                }
+                
+                showNotification(`¡${currentPlayer.name} ganó ${pointsEarned} punto(s)!`, 'success');
+                playSound('score');
+            }
+            
+            // PASAR AL SIGUIENTE TURNO
+            nextTurn();
+            
+            tacticalInput.value = '';
+            tacticalInput.focus();
+            
+            playSound('place');
+        }
+
+        // MANEJAR CELDA ESPECIAL
+        function handleSpecialCell(specialCell, player, cellElement) {
+            let message = '';
+            let icon = '';
+            let sound = 'bonus';
+            
+            if (specialCell.type === 'trap') {
+                message = '¡CELDA TRAMPA! Pierdes tu turno.';
+                icon = '💥';
+                sound = 'trap';
+                
+                // El jugador pierde su turno
+                setTimeout(() => {
+                    showNotification('¡Has caído en una trampa! Pierdes tu turno.', 'error');
+                    nextTurn();
+                }, 1500);
+            } else {
+                message = '¡CELDA BONUS! Obtienes un punto extra.';
+                icon = '🌟';
+                sound = 'bonus';
+                
+                // El jugador obtiene un punto extra
+                gameState.scores[player.id]++;
+                player.trikis++;
+                showNotification('¡Bonus! Obtienes 1 punto extra.', 'success');
+            }
+            
+            // Mostrar animación de celda especial
+            const animation = document.createElement('div');
+            animation.className = 'special-cell-animation';
+            animation.textContent = icon;
+            animation.style.color = player.color;
+            document.body.appendChild(animation);
+            
+            // Reproducir sonido
+            playSound(sound);
+            
+            // Eliminar animación después de que termine
+            setTimeout(() => {
+                document.body.removeChild(animation);
+            }, 1500);
+            
+            // Mostrar mensaje
+            showCenteredAlert('CELDA ESPECIAL', message, 3000);
+        }
+
+        // MOSTRAR MODAL DE ELIMINACIÓN DE TRIKI
+        function showTrikiEliminationModal(currentPlayerId) {
+            const modal = document.createElement('div');
+            modal.className = 'triki-modal';
+            modal.innerHTML = `
+                <div class="triki-modal-content">
+                    <div class="triki-modal-title">¡PODER ESPECIAL DESBLOQUEADO!</div>
+                    <div class="triki-timer" id="triki-timer">10s</div>
+                    <div class="alert-message">Selecciona un triki para eliminar. Tienes 10 segundos.</div>
+                    <div class="triki-grid" id="triki-grid"></div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Iniciar temporizador de 10 segundos
+            let timeLeft = 10;
+            const trikiTimer = document.getElementById('triki-timer');
+            const timerInterval = setInterval(() => {
+                timeLeft--;
+                trikiTimer.textContent = `${timeLeft}s`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    document.body.removeChild(modal);
+                    showNotification('Tiempo agotado. No se eliminó ningún triki.', 'error');
+                }
+            }, 1000);
+            
+            // Mostrar trikis de otros jugadores
+            const trikiGrid = document.getElementById('triki-grid');
+            let selectedTriki = null;
+            
+            gameState.players.forEach(player => {
+                if (player.id !== currentPlayerId && player.trikis > 0) {
+                    // Encontrar todas las celdas con triki de este jugador
+                    for (let row = 0; row < CONFIG.boardSize; row++) {
+                        for (let col = 0; col < CONFIG.boardSize; col++) {
+                            if (gameState.board[row][col] === player.id) {
+                                const cellElement = document.querySelector(`.grid-cell[data-row="${row}"][data-col="${col}"]`);
+                                if (cellElement.classList.contains('triki')) {
+                                    const trikiCell = document.createElement('div');
+                                    trikiCell.className = 'triki-cell';
+                                    trikiCell.innerHTML = `
+                                        <div class="triki-icon">${player.icon}</div>
+                                        <div>${player.name}</div>
+                                        <div class="remove-x">✕</div>
+                                    `;
+                                    
+                                    trikiCell.addEventListener('click', () => {
+                                        // Resaltar el triki seleccionado
+                                        if (selectedTriki) {
+                                            selectedTriki.classList.remove('selected');
+                                        }
+                                        trikiCell.classList.add('selected');
+                                        selectedTriki = trikiCell;
+                                        
+                                        // Eliminar el triki al hacer clic
+                                        player.trikis = Math.max(0, player.trikis - 1);
+                                        gameState.scores[player.id] = Math.max(0, gameState.scores[player.id] - 1);
+                                        
+                                        // Quitar la clase triki de la celda
+                                        cellElement.classList.remove('triki');
+                                        
+                                        // Cerrar modal
+                                        clearInterval(timerInterval);
+                                        document.body.removeChild(modal);
+                                        
+                                        showNotification(`¡Se eliminó un triki de ${player.name}!`, 'success');
+                                        updateScoreboard();
+                                    });
+                                    
+                                    trikiGrid.appendChild(trikiCell);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Si no hay trikis para eliminar, cerrar el modal
+            if (trikiGrid.children.length === 0) {
+                trikiGrid.innerHTML = '<div style="color: white; text-align: center;">No hay trikis disponibles para eliminar.</div>';
+                
+                setTimeout(() => {
+                    clearInterval(timerInterval);
+                    document.body.removeChild(modal);
+                }, 2000);
+            }
+        }
+
+        // CREAR EFECTO VISUAL AL COLOCAR FICHA
+        function createPlacementEffect(element, color) {
+            // Efecto de partículas
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    particle.style.cssText = `
+                        position: absolute;
+                        width: 4px;
+                        height: 4px;
+                        background: ${color};
+                        border-radius: 50%;
+                        left: 50%;
+                        top: 50%;
+                        pointer-events: none;
+                        z-index: 1000;
+                    `;
+                    element.appendChild(particle);
+                    
+                    const angle = (i / 8) * Math.PI * 2;
+                    const distance = 30;
+                    particle.animate([
+                        { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+                        { transform: `translate(${Math.cos(angle) * distance - 50}%, ${Math.sin(angle) * distance - 50}%) scale(0)`, opacity: 0 }
+                    ], {
+                        duration: 600,
+                        easing: 'ease-out'
+                    }).onfinish = () => particle.remove();
+                }, i * 50);
+            }
+        }
+
+        // CALCULAR PUNTUACIÓN
+        function calculateScore(newRow, newCol, playerId) {
+            const directions = [
+                [ [0, -1], [0, 1] ], // Horizontal
+                [ [-1, 0], [1, 0] ], // Vertical
+                [ [-1, -1], [1, 1] ], // Diagonal \
+                [ [-1, 1], [1, -1] ]  // Diagonal /
+            ];
+
+            let totalPoints = 0;
+            let winningLines = [];
+
+            directions.forEach(directionPair => {
+                let lineLength = 1; // Empezamos con la ficha recién colocada
+                let lineCells = [{row: newRow, col: newCol}];
+
+                // Contar en ambas direcciones opuestas
+                directionPair.forEach(direction => {
+                    let [dRow, dCol] = direction;
+                    let r = newRow + dRow;
+                    let c = newCol + dCol;
+
+                    // Mientras estemos en el tablero y encontremos una ficha del mismo jugador...
+                    while (r >= 0 && r < CONFIG.boardSize && c >= 0 && c < CONFIG.boardSize && gameState.board[r][c] === playerId) {
+                        lineLength++;
+                        lineCells.push({row: r, col: c});
+                        r += dRow;
+                        c += dCol;
+                    }
+                });
+
+                // Si se formó una línea de al menos 3, sumar puntos.
+                if (lineLength >= 3) {
+                    const pointsEarned = lineLength - 2; // Ej: línea de 3 = 1 punto, línea de 4 = 2 puntos.
+                    totalPoints += pointsEarned;
+                    
+                    // Destacar la línea
+                    highlightLine(lineCells, playerId);
+                    winningLines.push(lineCells);
+                }
+            });
+
+            return { points: totalPoints, lines: winningLines };
+        }
+
+        // DESTACAR LÍNEA GANADORA
+        function highlightLine(cells, playerId) {
+            const player = gameState.players.find(p => p.id === playerId);
+            if (!player) return;
+            
+            cells.forEach(cell => {
+                const cellElement = document.querySelector(`.grid-cell[data-row="${cell.row}"][data-col="${cell.col}"]`);
+                cellElement.classList.add('winning-line');
+            });
+            
+            // Guardar la línea ganadora
+            gameState.winningLines.push({ cells: cells, playerId: playerId });
+        }
+
+        // SIGUIENTE TURNO
+        function nextTurn() {
+            // Reiniciar temporizador de turno
+            clearInterval(gameState.turnTimerInterval);
+            
+            gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+            startTurnTimer();
+            updateBattleUI();
+            updateScoreboard();
+            
+            // Enfocar el input táctico
+            tacticalInput.focus();
+        }
+
+        // ACTUALIZAR INTERFAZ DE BATALLA
+        function updateBattleUI() {
+            const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+            warriorInfo.innerHTML = `
+                <span class="warrior-icon">${currentPlayer.icon}</span>
+                ${currentPlayer.name}
+            `;
+        }
+
+        // ACTUALIZAR TABLERO DE PUNTUACIONES
+        function updateScoreboard() {
+            scoreboard.innerHTML = '';
+            
+            gameState.players.forEach((player, index) => {
+                const scoreItem = document.createElement('div');
+                scoreItem.className = `score-item ${index === gameState.currentPlayerIndex ? 'active' : ''}`;
+                scoreItem.innerHTML = `
+                    <span class="warrior-icon">${player.icon}</span>
+                    <span class="warrior-name">${player.name}</span>
+                    <span class="score-value">${gameState.scores[player.id]} (${player.trikis} trikis)</span>
+                `;
+                scoreboard.appendChild(scoreItem);
+            });
+        }
+
+        // FINALIZAR BATALLA
+        function endBattle() {
+            gameState.isBattleActive = false;
+            clearInterval(gameState.timerInterval);
+            clearInterval(gameState.turnTimerInterval);
+            
+            // Determinar al ganador
+            let winner = null;
+            let maxScore = -1;
+            let isTie = false;
+
+            gameState.players.forEach(player => {
+                if (gameState.scores[player.id] > maxScore) {
+                    maxScore = gameState.scores[player.id];
+                    winner = player;
+                    isTie = false;
+                } else if (gameState.scores[player.id] === maxScore) {
+                    isTie = true;
+                }
+            });
+
+            // Cambiar a pantalla de resultados
+            battleArena.classList.remove('active');
+            resultsScreen.classList.add('active');
+            
+            // Mostrar resultados
+            if (isTie || !winner) {
+                winnerIcon.textContent = '🏆';
+                winnerName.textContent = '¡EMPATE!';
+            } else {
+                winnerIcon.textContent = winner.icon;
+                winnerName.textContent = winner.name;
+            }
+            
+            // Mostrar puntuaciones finales
+            displayFinalScores();
+            
+            playSound(isTie ? 'tie' : 'win');
+        }
+
+        // MOSTRAR PUNTUACIONES FINALES
+        function displayFinalScores() {
+            finalScores.innerHTML = '<h3>PUNTUACIONES FINALES</h3>';
+            
+            // Ordenar jugadores por puntuación
+            const sortedPlayers = [...gameState.players].sort((a, b) => gameState.scores[b.id] - gameState.scores[a.id]);
+            
+            sortedPlayers.forEach(player => {
+                const scoreItem = document.createElement('div');
+                scoreItem.className = 'final-score-item';
+                scoreItem.innerHTML = `
+                    <span>${player.icon} ${player.name}</span>
+                    <span class="score-value">${gameState.scores[player.id]} puntos (${player.trikis} trikis)</span>
+                `;
+                finalScores.appendChild(scoreItem);
+            });
+            
+            // Mostrar estadísticas adicionales
+            const stats = document.createElement('div');
+            stats.className = 'game-stats';
+            stats.innerHTML = `
+                <div class="final-score-item">
+                    <span>Total de movimientos:</span>
+                    <span>${gameState.moves}</span>
+                </div>
+                <div class="final-score-item">
+                    <span>Duración de la batalla:</span>
+                    <span>${Math.floor((CONFIG.totalTime - gameState.timeRemaining) / 60)}:${((CONFIG.totalTime - gameState.timeRemaining) % 60).toString().padStart(2, '0')}</span>
+                </div>
+            `;
+            finalScores.appendChild(stats);
+        }
+
+        // REINICIAR JUEGO
+        function restartGame() {
+            resultsScreen.classList.remove('active');
+            mainMenu.classList.add('active');
+            
+            // Mantener jugadores pero reiniciar todo lo demás
+            gameState.board = [];
+            gameState.isBattleActive = false;
+            gameState.timeRemaining = CONFIG.totalTime;
+            gameState.moves = 0;
+            gameState.currentPlayerIndex = 0;
+            gameState.winningLines = [];
+            gameState.specialPowerUsed = false;
+            gameState.specialCells = [];
+            
+            // Reiniciar puntuaciones
+            Object.keys(gameState.scores).forEach(key => {
+                gameState.scores[key] = 0;
+            });
+            
+            // Reiniciar inputs
+            tacticalInput.value = '';
+            warriorNameInput.focus();
+            
+            playSound('restart');
+        }
+
+        // MOSTRAR NOTIFICACIÓN
+        function showNotification(message, type) {
+            // Crear elemento de notificación
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                background: ${type === 'error' ? 'var(--neon-pink)' : 'var(--neon-green)'};
+                color: white;
+                border-radius: 5px;
+                z-index: 10000;
+                font-weight: 600;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                transform: translateX(150%);
+                transition: transform 0.3s ease;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animación de entrada
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 10);
+            
+            // Animación de salida después de 3 segundos
+            setTimeout(() => {
+                notification.style.transform = 'translateX(150%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // MOSTRAR ALERTA CENTRADA - CON AUTO-CIERRE
+        function showCenteredAlert(title, message, timeout = null) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'centered-alert';
+            alertDiv.innerHTML = `
+                <div class="alert-title">${title}</div>
+                <div class="alert-message">${message}</div>
+                <button class="alert-button" id="alert-ok">ACEPTAR</button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            document.getElementById('alert-ok').onclick = () => {
+                document.body.removeChild(alertDiv);
+                playSound('click');
+            };
+            
+            // Auto-cierre después del tiempo especificado
+            if (timeout) {
+                setTimeout(() => {
+                    if (document.body.contains(alertDiv)) {
+                        document.body.removeChild(alertDiv);
+                    }
+                }, timeout);
+            }
+        }
+
+        // REPRODUCIR SONIDO (simulado con efectos de audio web)
+        function playSound(type) {
+            // En un entorno real, aquí cargaríamos archivos de audio
+            // Por ahora, simulamos sonidos con el AudioContext de Web Audio API
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                switch(type) {
+                    case 'click':
+                    case 'close':
+                        oscillator.frequency.value = 800;
+                        gainNode.gain.value = 0.1;
+                        oscillator.start();
+                        setTimeout(() => oscillator.stop(), 100);
+                        break;
+                    case 'place':
+                        oscillator.frequency.value = 600;
+                        gainNode.gain.value = 0.1;
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+                        oscillator.start();
+                        setTimeout(() => oscillator.stop(), 300);
+                        break;
+                    case 'score':
+                        oscillator.frequency.value = 1000;
+                        gainNode.gain.value = 0.2;
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
+                        oscillator.start();
+                        setTimeout(() => oscillator.stop(), 500);
+                        break;
+                    case 'add':
+                    case 'start':
+                        oscillator.frequency.value = 1200;
+                        gainNode.gain.value = 0.1;
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+                        oscillator.start();
+                        setTimeout(() => {
+                            oscillator.stop();
+                        }, 200);
+                        break;
+                    case 'bonus':
+                        // Sonido de bonus
+                        for (let i = 0; i < 3; i++) {
+                            setTimeout(() => {
+                                const osc = audioContext.createOscillator();
+                                const gn = audioContext.createGain();
+                                osc.connect(gn);
+                                gn.connect(audioContext.destination);
+                                osc.frequency.value = 1000 + i * 100;
+                                gn.gain.value = 0.1;
+                                gn.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+                                osc.start();
+                                setTimeout(() => osc.stop(), 200);
+                            }, i * 100);
+                        }
+                        break;
+                    case 'trap':
+                        // Sonido de trampa
+                        oscillator.frequency.value = 300;
+                        gainNode.gain.value = 0.2;
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
+                        oscillator.start();
+                        setTimeout(() => oscillator.stop(), 500);
+                        break;
+                    case 'win':
+                        // Sonido de victoria más elaborado
+                        for (let i = 0; i < 3; i++) {
+                            setTimeout(() => {
+                                const osc = audioContext.createOscillator();
+                                const gn = audioContext.createGain();
+                                osc.connect(gn);
+                                gn.connect(audioContext.destination);
+                                osc.frequency.value = 800 + i * 200;
+                                gn.gain.value = 0.1;
+                                gn.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+                                osc.start();
+                                setTimeout(() => osc.stop(), 300);
+                            }, i * 150);
+                        }
+                        break;
+                    case 'tie':
+                        // Sonido de empate
+                        oscillator.frequency.value = 500;
+                        gainNode.gain.value = 0.1;
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.8);
+                        oscillator.start();
+                        setTimeout(() => oscillator.stop(), 800);
+                        break;
+                    case 'restart':
+                        // Sonido de reinicio
+                        oscillator.frequency.value = 400;
+                        gainNode.gain.value = 0.1;
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.4);
+                        oscillator.start();
+                        setTimeout(() => oscillator.stop(), 400);
+                        break;
+                }
+            } catch (e) {
+                console.log('Audio no soportado en este navegador');
+            }
+        }
+
+        // OBTENER COLOR DEL JUGADOR
+        function getPlayerColor(index) {
+            const colors = [
+                '#FF5252', '#448AFF', '#66BB6A', '#FFCA28', 
+                '#AB47BC', '#26C6DA', '#FF7B00', '#9C27B0'
+            ];
+            return colors[index % colors.length];
+        }
+    </script>
+</body>
+</html>
